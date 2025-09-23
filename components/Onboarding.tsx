@@ -2,36 +2,39 @@ import React, { useMemo, useRef, useState } from "react";
 import {
   Pressable,
   StyleSheet,
-  Text,
   View,
   ScrollView,
   NativeSyntheticEvent,
   NativeScrollEvent,
   useWindowDimensions,
   Dimensions,
+  Image,
+  Animated,
 } from "react-native";
+import CustomText from "./CustomText";
 
 interface OnboardingProps {
   onComplete: () => void;
 }
 
-export default function Onboarding({
-  onComplete,
-}: OnboardingProps): JSX.Element {
+export default function Onboarding({ onComplete }: OnboardingProps) {
   const { width } = useWindowDimensions();
   const [index, setIndex] = useState<number>(0);
+  const [isPeopleSmiling, setIsPeopleSmiling] = useState<boolean>(false);
   const scrollRef = useRef<ScrollView | null>(null);
+  const buttonOpacity = useRef(new Animated.Value(0.6)).current;
 
   const pages = useMemo(
     () => [
       {
-        key: "intro",
-        emoji: "🫧",
-        title: "보글보글",
-        subtitle: "새로운 경험의 시작",
-        desc: "간단하고 직관적인 인터페이스로\n모든 기능을 쉽게 이용해보세요.",
-        gradient: ["#667eea", "#764ba2"],
-        accent: "#667eea",
+        key: "communication",
+        emoji: "📱",
+        title: "의사소통",
+        subtitle: "새로운 사람들과 소통",
+        desc: "커뮤니티 뉴스에 대해\n채팅해보세요.",
+        gradient: ["#FFE5B4", "#FFB347"],
+        accent: "#FF8C00",
+        peopleIcon: true,
       },
       {
         key: "kakao",
@@ -58,12 +61,26 @@ export default function Onboarding({
   const onScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
     const x = e.nativeEvent.contentOffset.x;
     const i = Math.round(x / width);
-    if (i !== index) setIndex(i);
+    if (i !== index) {
+      setIndex(i);
+      // 버튼 애니메이션
+      Animated.timing(buttonOpacity, {
+        toValue: i === pages.length - 1 ? 1 : 0.6,
+        duration: 200,
+        useNativeDriver: true,
+      }).start();
+    }
   };
 
   const goTo = (i: number) => {
     scrollRef.current?.scrollTo({ x: i * width, animated: true });
     setIndex(i);
+    // 버튼 애니메이션
+    Animated.timing(buttonOpacity, {
+      toValue: i === pages.length - 1 ? 1 : 0.6,
+      duration: 200,
+      useNativeDriver: true,
+    }).start();
   };
 
   return (
@@ -79,26 +96,35 @@ export default function Onboarding({
       >
         {pages.map((p) => (
           <View key={p.key} style={[styles.slide, { width }]}>
-            <View
-              style={[
-                styles.gradientBackground,
-                { backgroundColor: p.gradient[0] },
-              ]}
-            >
+            <View style={styles.gradientBackground}>
               <View style={styles.content}>
-                <View
-                  style={[
-                    styles.iconContainer,
-                    { backgroundColor: p.accent + "20" },
-                  ]}
-                >
-                  <Text style={styles.iconText}>{p.emoji}</Text>
+                <View style={styles.iconContainer}>
+                  {p.peopleIcon ? (
+                    <Pressable
+                      onPress={() => setIsPeopleSmiling(!isPeopleSmiling)}
+                      style={styles.peopleImageContainer}
+                    >
+                      <Image
+                        source={
+                          isPeopleSmiling
+                            ? require("../assets/onboarding/people-smile.png")
+                            : require("../assets/onboarding/people.png")
+                        }
+                        style={styles.peopleImage}
+                        resizeMode="contain"
+                      />
+                    </Pressable>
+                  ) : (
+                    <CustomText style={styles.iconText}>{p.emoji}</CustomText>
+                  )}
                 </View>
 
                 <View style={styles.textContainer}>
-                  <Text style={styles.title}>{p.title}</Text>
-                  <Text style={styles.subtitle}>{p.subtitle}</Text>
-                  <Text style={styles.desc}>{p.desc}</Text>
+                  <CustomText style={styles.title} bold>
+                    {p.title}
+                  </CustomText>
+                  <CustomText style={styles.subtitle}>{p.subtitle}</CustomText>
+                  <CustomText style={styles.desc}>{p.desc}</CustomText>
                 </View>
               </View>
             </View>
@@ -132,30 +158,43 @@ export default function Onboarding({
             disabled={index === 0}
             onPress={() => goTo(Math.max(0, index - 1))}
           >
-            <Text
+            <CustomText
               style={[
                 styles.navIcon,
                 index === 0 ? styles.navIconDisabled : undefined,
               ]}
+              bold
             >
               ‹
-            </Text>
+            </CustomText>
           </Pressable>
 
-          {index === pages.length - 1 ? (
+          <Animated.View style={{ opacity: buttonOpacity }}>
             <Pressable
               style={({ pressed }) => [
                 styles.startCenterButton,
-                { backgroundColor: pages[index].accent },
+                {
+                  backgroundColor:
+                    index === pages.length - 1
+                      ? pages[index].accent
+                      : "#E5E7EB",
+                },
                 pressed ? styles.navButtonPressed : undefined,
               ]}
-              onPress={onComplete}
+              disabled={index !== pages.length - 1}
+              onPress={index === pages.length - 1 ? onComplete : undefined}
             >
-              <Text style={styles.startCenterText}>시작</Text>
+              <CustomText
+                style={[
+                  styles.startCenterText,
+                  { color: index === pages.length - 1 ? "#FFFFFF" : "#9CA3AF" },
+                ]}
+                bold
+              >
+                {index === pages.length - 1 ? "시작" : "다음"}
+              </CustomText>
             </Pressable>
-          ) : (
-            <View style={styles.centerSpacer} />
-          )}
+          </Animated.View>
 
           {index === pages.length - 1 ? (
             <View style={[styles.navButton, styles.navButtonDisabled]} />
@@ -168,7 +207,9 @@ export default function Onboarding({
               ]}
               onPress={() => goTo(index + 1)}
             >
-              <Text style={styles.navIcon}>›</Text>
+              <CustomText style={styles.navIcon} bold>
+                ›
+              </CustomText>
             </Pressable>
           )}
         </View>
@@ -187,6 +228,7 @@ const styles = StyleSheet.create({
   },
   gradientBackground: {
     flex: 1,
+    backgroundColor: "#FFFFFF",
     paddingTop: 60,
     paddingBottom: 40,
   },
@@ -194,23 +236,13 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: 32,
     alignItems: "center",
-    justifyContent: "center",
+    justifyContent: "flex-start",
+    paddingTop: 80,
   },
   iconContainer: {
-    width: 120,
-    height: 120,
-    borderRadius: 30,
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: 40,
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 8,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 16,
-    elevation: 8,
+    marginBottom: 100,
   },
   iconText: {
     fontSize: 48,
@@ -220,26 +252,21 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   title: {
-    fontSize: 36,
-    fontWeight: "800",
-    color: "#FFFFFF",
+    fontSize: 32,
+    color: "#1F2937",
     textAlign: "center",
-    marginBottom: 12,
-    textShadowColor: "rgba(0, 0, 0, 0.1)",
-    textShadowOffset: { width: 0, height: 2 },
-    textShadowRadius: 4,
+    marginBottom: 8,
   },
   subtitle: {
-    fontSize: 20,
-    fontWeight: "600",
-    color: "rgba(255, 255, 255, 0.9)",
+    fontSize: 18,
+    color: "#6B7280",
     textAlign: "center",
-    marginBottom: 20,
+    marginBottom: 16,
   },
   desc: {
-    fontSize: 16,
-    lineHeight: 24,
-    color: "rgba(255, 255, 255, 0.8)",
+    fontSize: 15,
+    lineHeight: 22,
+    color: "#9CA3AF",
     textAlign: "center",
   },
   bottomContainer: {
@@ -277,7 +304,7 @@ const styles = StyleSheet.create({
   navButton: {
     width: 60,
     height: 60,
-    borderRadius: 30,
+    borderRadius: 12,
     backgroundColor: "#F3F4F6",
     justifyContent: "center",
     alignItems: "center",
@@ -300,9 +327,8 @@ const styles = StyleSheet.create({
   },
   navIcon: {
     color: "#FFFFFF",
-    fontSize: 24,
-    fontWeight: "700",
-    lineHeight: 24,
+    fontSize: 32,
+    lineHeight: 32,
   },
   navIconDisabled: {
     color: "#9CA3AF",
@@ -323,6 +349,71 @@ const styles = StyleSheet.create({
   startCenterText: {
     color: "#FFFFFF",
     fontSize: 18,
-    fontWeight: "700",
+  },
+  phoneContainer: {
+    alignItems: "center",
+    justifyContent: "center",
+    position: "relative",
+  },
+  phone: {
+    width: 80,
+    height: 140,
+    backgroundColor: "#87CEEB",
+    borderRadius: 20,
+    padding: 8,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  phoneScreen: {
+    flex: 1,
+    backgroundColor: "#FFE55C",
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+    position: "relative",
+  },
+  alertIcon: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: "#FF4444",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  alertText: {
+    color: "#FFFFFF",
+    fontSize: 16,
+  },
+  phoneHome: {
+    width: 30,
+    height: 4,
+    backgroundColor: "#87CEEB",
+    borderRadius: 2,
+    marginTop: 8,
+    alignSelf: "center",
+  },
+  alertLines: {
+    position: "absolute",
+    right: -20,
+    top: 20,
+    flexDirection: "column",
+    gap: 2,
+  },
+  alertLine: {
+    width: 8,
+    height: 2,
+    backgroundColor: "#333333",
+    borderRadius: 1,
+  },
+  peopleImageContainer: {
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  peopleImage: {
+    width: 400,
+    height: 400,
   },
 });

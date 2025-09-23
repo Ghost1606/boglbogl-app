@@ -1,15 +1,47 @@
 import React from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { StyleSheet, View, Image } from "react-native";
+import CustomText from "./CustomText";
 
 interface SuccessProps {
   nickname: string;
+  profileImage?: string;
 }
 
-export default function Success({ nickname }: SuccessProps): JSX.Element {
+export default function Success({ nickname, profileImage }: SuccessProps) {
+  console.log("Success profileImage URI:", profileImage);
+  const { width, height } = require("react-native").useWindowDimensions();
+  const base = Math.min(width, height);
+  const avatarSize = Math.max(36, Math.round(base * 0.12));
+
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>로그인 성공!</Text>
-      <Text style={styles.subtitle}>{nickname} 님 환영합니다 🎉</Text>
+      {profileImage && (
+        <Image
+          source={{ uri: profileImage }}
+          style={[
+            styles.profileImage,
+            {
+              width: avatarSize,
+              height: avatarSize,
+              borderRadius: avatarSize / 2,
+            },
+          ]}
+          resizeMode="cover"
+          onError={(e) => {
+            console.warn(
+              "Failed to load profile image",
+              profileImage,
+              e?.nativeEvent?.error
+            );
+          }}
+        />
+      )}
+      <CustomText style={styles.title} bold>
+        로그인 성공!
+      </CustomText>
+      <CustomText style={styles.subtitle}>
+        {nickname} 님 환영합니다 🎉
+      </CustomText>
     </View>
   );
 }
@@ -24,7 +56,6 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 28,
-    fontWeight: "800",
     color: "#111111",
     marginBottom: 12,
   },
@@ -32,5 +63,10 @@ const styles = StyleSheet.create({
     fontSize: 18,
     color: "#45484D",
     textAlign: "center",
+  },
+  profileImage: {
+    position: "absolute",
+    top: 20,
+    left: 20,
   },
 });

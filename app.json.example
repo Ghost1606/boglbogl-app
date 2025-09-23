@@ -11,7 +11,9 @@
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
-    "assetBundlePatterns": ["**/*"],
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.boglebogle.app"
@@ -44,7 +46,8 @@
             ]
           }
         }
-      ]
+      ],
+      "expo-font"
     ]
   }
 }
