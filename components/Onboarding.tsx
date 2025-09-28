@@ -22,6 +22,7 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
   const [index, setIndex] = useState<number>(0);
   const [isPeopleSmiling, setIsPeopleSmiling] = useState<boolean>(false);
   const scrollRef = useRef<ScrollView | null>(null);
+  const buttonScale = useRef(new Animated.Value(1)).current;
   const buttonOpacity = useRef(new Animated.Value(0.6)).current;
 
   const pages = useMemo(
@@ -31,7 +32,7 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
         emoji: "📱",
         title: "의사소통",
         subtitle: "새로운 사람들과 소통",
-        desc: "커뮤니티 뉴스에 대해\n채팅해보세요.",
+        desc: "생각나지 않는 단어\n 당황하지 않았나요?",
         gradient: ["#FFE5B4", "#FFB347"],
         accent: "#FF8C00",
         peopleIcon: true,
@@ -64,11 +65,18 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
     if (i !== index) {
       setIndex(i);
       // 버튼 애니메이션
-      Animated.timing(buttonOpacity, {
-        toValue: i === pages.length - 1 ? 1 : 0.6,
-        duration: 200,
-        useNativeDriver: true,
-      }).start();
+      Animated.parallel([
+        Animated.timing(buttonOpacity, {
+          toValue: i === pages.length - 1 ? 1 : 0.6,
+          duration: 300,
+          useNativeDriver: true,
+        }),
+        Animated.timing(buttonScale, {
+          toValue: i === pages.length - 1 ? 1.05 : 1,
+          duration: 300,
+          useNativeDriver: true,
+        }),
+      ]).start();
     }
   };
 
@@ -76,11 +84,18 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
     scrollRef.current?.scrollTo({ x: i * width, animated: true });
     setIndex(i);
     // 버튼 애니메이션
-    Animated.timing(buttonOpacity, {
-      toValue: i === pages.length - 1 ? 1 : 0.6,
-      duration: 200,
-      useNativeDriver: true,
-    }).start();
+    Animated.parallel([
+      Animated.timing(buttonOpacity, {
+        toValue: i === pages.length - 1 ? 1 : 0.6,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+      Animated.timing(buttonScale, {
+        toValue: i === pages.length - 1 ? 1.05 : 1,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+    ]).start();
   };
 
   return (
@@ -153,7 +168,9 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
             style={({ pressed }) => [
               styles.navButton,
               pressed ? styles.navButtonPressed : undefined,
-              index === 0 ? styles.navButtonDisabled : undefined,
+              index === 0
+                ? styles.navButtonDisabled
+                : { backgroundColor: pages[index].accent },
             ]}
             disabled={index === 0}
             onPress={() => goTo(Math.max(0, index - 1))}
@@ -169,32 +186,34 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
             </CustomText>
           </Pressable>
 
-          <Animated.View style={{ opacity: buttonOpacity }}>
-            <Pressable
-              style={({ pressed }) => [
-                styles.startCenterButton,
-                {
-                  backgroundColor:
-                    index === pages.length - 1
-                      ? pages[index].accent
-                      : "#E5E7EB",
-                },
-                pressed ? styles.navButtonPressed : undefined,
-              ]}
-              disabled={index !== pages.length - 1}
-              onPress={index === pages.length - 1 ? onComplete : undefined}
+          {index === pages.length - 1 ? (
+            <Animated.View
+              style={{
+                opacity: buttonOpacity,
+                transform: [{ scale: buttonScale }],
+              }}
             >
-              <CustomText
-                style={[
-                  styles.startCenterText,
-                  { color: index === pages.length - 1 ? "#FFFFFF" : "#9CA3AF" },
+              <Pressable
+                style={({ pressed }) => [
+                  styles.startCenterButton,
+                  {
+                    backgroundColor: pages[index].accent,
+                  },
+                  pressed ? styles.navButtonPressed : undefined,
                 ]}
-                bold
+                onPress={onComplete}
               >
-                {index === pages.length - 1 ? "시작" : "다음"}
-              </CustomText>
-            </Pressable>
-          </Animated.View>
+                <CustomText
+                  style={[styles.startCenterText, { color: "#FFFFFF" }]}
+                  bold
+                >
+                  시작
+                </CustomText>
+              </Pressable>
+            </Animated.View>
+          ) : (
+            <View style={styles.centerSpacer} />
+          )}
 
           {index === pages.length - 1 ? (
             <View style={[styles.navButton, styles.navButtonDisabled]} />
